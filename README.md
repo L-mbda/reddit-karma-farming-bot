@@ -22,7 +22,7 @@ Make a post on the issues page. I or others will try to help you as soon as we c
 
 ## Videos and links
 
-This bot is probably the reason you saw that post again on Reddit. Need help with the bot? Join us on Discord https://bit.ly/mrps-discord 
+This bot is probably the reason you saw that post again on Reddit.
 
 ![farm karma 1](https://user-images.githubusercontent.com/1307942/86540032-7e1a2c00-bef9-11ea-9266-16830c5b9dfa.png)
 ![farm karma bot](https://user-images.githubusercontent.com/1307942/86153469-a40a8f80-baf9-11ea-80b5-d86dd31108d6.png)
