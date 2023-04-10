@@ -31,13 +31,13 @@ CONFIG = prefer_envar({
   # the chance the bot will repost a post
   "reddit_post_chance": 0, #0.005
   # the chance the bot will make a comment
-  "reddit_comment_chance": 0.005, #0.005
+  "reddit_comment_chance": 0.003, #0.005
   # the chance the bot will reply to a comment
   # otherwise it will reply to a post
-  "reddit_reply_to_comment": 0.002, #0.002
+  "reddit_reply_to_comment": 0.0015, #0.002
   # chance the bot will remove poor performing
   # posts and comments
-  "reddit_remove_low_scores": 0.002,
+  "reddit_remove_low_scores": 0.003,
   # posts/comments that get downvoted to this score will be deleted
   "reddit_low_score_threshold": 0,
   # chance to check if the bot is shadowbanned, 
@@ -56,7 +56,7 @@ CONFIG = prefer_envar({
   # 5 - 10pm-2am ((22,00),(2,00))
   "reddit_sleep_schedule": [2, 4],
   # Frequency to check if the bot hit karma limits
-  "reddit_karma_limit_check": 0.002,
+  "reddit_karma_limit_check": 0.0015,
   # Set to integer with the max comment karma 
   # before the bot shuts down. Set as None to ignore
   "reddit_comment_karma_limit": None,
