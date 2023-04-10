@@ -119,6 +119,7 @@ class Posts():
           if not post.url.startswith('https://'):
             posturl = 'https://' + post.url
           
+          log.info(f"reposting url: {posturl}")
           params = {"title": edit_text(post.title, 'title'), "url": posturl}
 
         sub = post.subreddit
