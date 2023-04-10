@@ -4,6 +4,7 @@ import random, requests, re
 from time import sleep as s
 from apis import pushshift_api, reddit_api
 from utils import chance
+import pmaw
 from .utils import get_subreddit, AVOID_WORDS
 from config.reddit_config import CONFIG
 from config.reddit.reddit_sub_lists import CROSSPOST_SUBS
@@ -70,7 +71,7 @@ class Posts():
       try:
         post_id = self.psapi.get_posts(sub.display_name)[0]['id']
         # don't use posts that have avoid words in title
-        if not any(word in comment.body for word in AVOID_WORDS):
+        if not any(word in comment['body'] for word in AVOID_WORDS):
           got_post = True
       except Exception as e:
         log.info(f"couldn't find post in {sub}")
@@ -96,7 +97,13 @@ class Posts():
       # log.info("running _repost")
       post = self.get_post(subreddit=subreddit)
       if not post: return
-      api_call=requests.get(post.url).status_code
+      posturl = post.url
+      log.info(posturl)
+      if not str(posturl).startswith('https://'):
+        posturl = 'https://' + posturl
+      
+      log.info(f"reposting url: {posturl}")
+      api_call=requests.get(posturl).status_code
       if api_call != 200:
         if api_call == 429:
           print('too many requests to pushshift')
@@ -116,8 +123,8 @@ class Posts():
 
         else:
           posturl = post.url
-          if not post.url.startswith('https://'):
-            posturl = 'https://' + post.url
+          if not str(posturl).startswith('https://'):
+            posturl = 'https://' + posturl
           
           log.info(f"reposting url: {posturl}")
           params = {"title": edit_text(post.title, 'title'), "url": posturl}
@@ -126,7 +133,16 @@ class Posts():
 
         # randomly choose a potential subreddit to cross post
         if CONFIG['reddit_crosspost_enabled']:
-          sub = self.rapi.subreddit(self.crosspost(sub.display_name))
+          if sub is not None:
+              log.debug(sub)
+              sub_name = self.crosspost(sub.display_name)
+              if sub_name is not None:
+                  sub = self.rapi.subreddit(sub_name)
+                  sub.submit(**params)
+              else:
+                  log.error("Error: crosspost subreddit name is None")
+          else:
+              log.error("Error: sub is None")
         try:
           self.rapi.subreddit(sub.display_name).submit(**params)
           return

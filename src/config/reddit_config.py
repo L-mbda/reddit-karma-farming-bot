@@ -29,12 +29,12 @@ log.info(f"REDDIT AUTH CONFIG:\n {log_json(AUTH)}")
 CONFIG = prefer_envar({
   "reddit_crosspost_enabled": False,
   # the chance the bot will repost a post
-  "reddit_post_chance": 0.005,
+  "reddit_post_chance": 0, #0.005
   # the chance the bot will make a comment
-  "reddit_comment_chance": 0.005,
+  "reddit_comment_chance": 0.005, #0.005
   # the chance the bot will reply to a comment
   # otherwise it will reply to a post
-  "reddit_reply_to_comment": 0.002,
+  "reddit_reply_to_comment": 0.002, #0.002
   # chance the bot will remove poor performing
   # posts and comments
   "reddit_remove_low_scores": 0.002,

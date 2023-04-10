@@ -80,7 +80,7 @@ def countdown(seconds=1):
 
 def chance(value=.20):
     rando = random.random()
-    # log.info("prob: " + str(value) + " rolled: " + str(rando))
+    log.info("prob: " + str(value) + " rolled: " + str(rando))
     return rando < value
 
 
