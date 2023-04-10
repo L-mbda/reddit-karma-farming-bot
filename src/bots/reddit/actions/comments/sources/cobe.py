@@ -48,23 +48,23 @@ class Cobe():
       
       # get the comment generator function from pushshift
       comments = self.psapi.get_comments(subreddit)
-
       # go through 500 comments per subreddit
       for x in range(500):
         # get the comment from the generator function
         try:
           comment = next(comments)
+          log.info(comment['body'])
         except StopIteration as e:
           log.info(f"end of comments")
           break
         
-        # bot responses are better when it learns from short comments
-        if len(comment.body) < 240:
-          log.debug(f"learning comment: {comment.body.encode('utf8')}")
-          
+        
+        if len(comment['body']) < 240:
+          log.debug(f"learning comment: {comment['body'].encode('utf8')}")
+                  
           # only learn comments that don't contain an avoid word
-          if not any(word in comment.body for word in AVOID_WORDS):
-            self.brain.learn(comment.body.encode("utf8")) 
+          if not any(word in comment['body'] for word in AVOID_WORDS):
+            self.brain.learn(comment['body'].encode("utf8"))
 
       # update the class size variable so the while loop
       # knows when to break

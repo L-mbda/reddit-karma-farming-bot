@@ -66,7 +66,7 @@ else:
 	unicode = unicode
 
 def isString( t ):
-	return isinstance(t, (unicode, str))
+	return isinstance(t, unicode) or isinstance(t, str)
 
 def ensureString( t, encoding="utf8" ):
 	if IS_PYTHON3:
@@ -123,17 +123,18 @@ def remove_widgets( container ):
 		container.contents.remove(_)
 
 def original_widgets( widget ):
-	if not widget:
+	if widget:
+		stack = [widget]
+		if len(stack) > 0 :
+			while hasattr(stack[0], "original_widget"):
+				original = stack[0].original_widget
+				if original not in stack:
+					stack.insert(0,original)
+				else:
+					break
+		return stack
+	else:
 		return []
-	stack = [widget]
-	if stack:
-		while hasattr(stack[0], "original_widget"):
-			original = stack[0].original_widget
-			if original not in stack:
-				stack.insert(0,original)
-			else:
-				break
-	return stack
 
 def original_widget(widget):
 	r = original_widgets(widget)
@@ -220,7 +221,10 @@ class PatchedColumns(urwid.Columns):
 	_parent = None
 	def set_focus(self, widget):
 		"""Set the column in focus with a widget in self.widget_list."""
-		position = self.widget_list.index(widget) if type(widget) != int else widget
+		if type(widget) != int:
+			position = self.widget_list.index(widget)
+		else:
+			position = widget
 		self.focus_col = position
 
 PatchedPile._parent    = urwid.Pile
@@ -255,22 +259,24 @@ class UI:
 
 		def __init__( self, collection=None ):
 			object.__init__(self)
-			if collection is None: collection = {}
+			if collection == None: collection = {}
 			self.w_w_content = collection
 
 		def __getattr__( self, name ):
 			if name.startswith("w_w_"):
 				return super(UI.Collection, self).__getattribute__(name)
-			w = self.w_w_content
-			if name not in w: raise UIRuntimeError("No widget with name: " + name )
-			return w[name]
+			else:
+				w = self.w_w_content
+				if name not in w: raise UIRuntimeError("No widget with name: " + name )
+				return w[name]
 
 		def __setattr__( self, name, value):
 			if name.startswith("w_w_"):
 				return super(UI.Collection, self).__setattr__(name, value)
-			if name in self.w_w_content:
-				raise SyntaxError("Item name already used: " + name)
-			self.w_w_content[name] = value
+			else:
+				if name in self.w_w_content:
+					raise SyntaxError("Item name already used: " + name)
+				self.w_w_content[name] = value
 
 	def __init__( self ):
 		"""Creates a new user interface object from the given text
@@ -327,7 +333,8 @@ class UI:
 
 	def unwrap( self, widget ):
 		"""Unwraps the widget (see `new` method)."""
-		if isinstance(widget, urwid.AttrWrap) and widget.w: widget = widget.w
+		if isinstance(widget, urwid.AttrWrap):
+			if widget.w: widget = widget.w
 		return widget
 
 	# EVENT HANDLERS
@@ -337,7 +344,7 @@ class UI:
 		"""Sets/Gets the current event handler.
 
 		This modifies the 'handler.ui' and sets it to this ui."""
-		if handler is None:
+		if handler == None:
 			if not  self._handlers: raise UIRuntimeError("No handler defined for: %s" % (self))
 			return self._handlers[-1][0]
 		else:
@@ -470,7 +477,7 @@ class UI:
 					res = self._handle("keyPress", topwidget, key)
 				except UIRuntimeError:
 					res = False
-			if not res:
+			if res is False:
 				topwidget.keypress(self._currentSize, key)
 
 	def getFocused( self ):
@@ -486,7 +493,9 @@ class UI:
 		raise Exception("Must be implemented by subclasses")
 
 	def isEditable( self, widget ):
-		return isinstance(widget, (urwid.Edit, urwid.IntEdit))
+		if   isinstance(widget, urwid.Edit):    return True
+		elif isinstance(widget, urwid.IntEdit): return True
+		else:                                   return False
 
 	def isFocusable( self, widget ):
 		if   isinstance(widget, urwid.Edit):        return True
@@ -559,7 +568,7 @@ class UI:
 				color     = COLORS.get(attribute)
 				if not color: raise UISyntaxError("Unsupported color: " + attribute)
 				res_line.append(color)
-			if len(res_line) != 4:
+			if not len(res_line) == 4:
 				raise UISyntaxError("Expected NAME: FOREGROUND BACKGROUND FONT")
 			res.append(tuple(res_line))
 		self._palette = res
@@ -709,7 +718,8 @@ class UI:
 			widget._urwideInfo = _ui["info"]
 		if _ui.get("tooltip"):
 			widget._urwideTooltip = _ui["tooltip"]
-		return self._styleWidget( widget, _ui )
+		res = self._styleWidget( widget, _ui )
+		return res
 
 	# WIDGET-SPECIFIC METHODS
 	# -------------------------------------------------------------------------
@@ -729,7 +739,7 @@ class UI:
 		self._add(self._createWidget(urwid.Text,data, ui=ui, args=args, kwargs=kwargs))
 
 	def _parseHdr( self, data ):
-		if self._header is not None:
+		if self._header != None:
 			raise UISyntaxError("Header can occur only once")
 		attr, data = self._argsFind(data)
 		ui, args, kwargs = self._parseAttributes(attr)
@@ -749,7 +759,7 @@ class UI:
 		# Parses the declaration
 		match = self.RE_CHC.match(data)
 		if not match: raise SyntaxError("Malformed choice: " + repr(data))
-		state = match.group(1) != " "
+		state = not (match.group(1) == " ")
 		group = group_name = match.group(2).strip()
 		group = self._groups.setdefault(group,[])
 		assert self._groups[group_name] == group
@@ -786,8 +796,12 @@ class UI:
 		label, text = match.groups()
 		ui, args, kwargs = self._parseAttributes(data)
 		if label and self.hasStyle('label'): label = ('label', label)
-		self._add(self._createWidget(urwid.Edit, label, text,
-		ui=ui, args=args, kwargs=kwargs))
+		if label:
+			self._add(self._createWidget(urwid.Edit, label, text,
+			ui=ui, args=args, kwargs=kwargs))
+		else:
+			self._add(self._createWidget(urwid.Edit, label, text,
+			ui=ui, args=args, kwargs=kwargs))
 
 	def _parsePle( self, data ):
 		def end( content, ui=None, **kwargs ):
@@ -914,7 +928,7 @@ class Console(UI):
 		self._listbox.set_focus(focused)
 		while True:
 			if not self.isFocusable(self.getFocused()) \
-			and self._listbox.body.get_next(focused)[0] is not None:
+			and self._listbox.body.get_next(focused)[0] != None:
 				focused += 1
 				self._listbox.set_focus(focused)
 			else:
@@ -957,7 +971,7 @@ class Console(UI):
 		# We clear the screen (I know, I should use URWID, but that was the
 		# quickest way I found)
 		curses.setupterm()
-		sys.stdout.write(curses.tigetstr('clear').decode())
+		sys.stdout.write(curses.tigetstr('clear'))
 		if self.endMessage:
 			print (self.endMessage)
 		return self.endStatus
@@ -1024,7 +1038,7 @@ class Console(UI):
 	def draw( self ):
 		"""Main loop to draw the console. This takes into account the fact that
 		there may be a dialog to display."""
-		if self._dialog is not None:
+		if self._dialog != None:
 			o = urwid.Overlay( self._dialog.view(), self._frame,
 				"center",
 				self._dialog.width(),
@@ -1124,7 +1138,7 @@ class Dialog(UI):
 		if not palui: palui = self.PALETTE
 		self.parseStyle(palui)
 		style = self._styleWidget
-		assert self._view is None
+		assert self._view == None
 		content = []
 		if self._headertext:
 			content.append(style(urwid.Text(self._headertext), {'style':(self._style +'.header', "dialog.header", 'header')}))
@@ -1141,7 +1155,8 @@ class Dialog(UI):
 		shadow = self.hasStyle( self._style + ".shadow", "dialog.shadow", "shadow")
 		border = self.hasStyle( self._style + ".border", "dialog.border", "border")
 		if shadow:
-			border = (border, '  ') if border else '  '
+			if border: border = (border, '  ')
+			else: border = '  '
 			w = urwid.Columns([w,('fixed', 2, urwid.AttrWrap(urwid.Filler(urwid.Text(border), "top") ,shadow))])
 			w = urwid.Frame( w, footer = urwid.AttrWrap(urwid.Text(border),shadow))
 		self._view = w
@@ -1165,7 +1180,7 @@ class Dialog(UI):
 		self._parent._dialog = None
 
 	def _parseHdr( self, data ):
-		if self._header is not None:
+		if self._header != None:
 			raise UISyntaxError("Header can occur only once")
 		attr, data = self._argsFind(data)
 		ui, args, kwargs = self._parseAttributes(attr)
@@ -1207,11 +1222,11 @@ class Handler(object):
 	def responder( self, event ):
 		"""Returns the function that responds to the given event."""
 		_event_name = "on" + event[0].upper() + event[1:]
-		if not hasattr(self, _event_name):
+		if hasattr(self, _event_name):
+			res = getattr(self, _event_name)
+			assert res
+			return res
+		else:
 			raise UIRuntimeError("Event not implemented: " + event)
-
-		res = getattr(self, _event_name)
-		assert res
-		return res
 
 # EOF - vim: tw=80 ts=4 sw=4 noet

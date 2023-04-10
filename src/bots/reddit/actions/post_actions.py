@@ -113,7 +113,13 @@ class Posts():
           else:
             print('Info: skipping post; it was malformed or date indicated')
             # print(post.selftext)
-        else:params = {"title": edit_text(post.title, 'title'), "url": post.url}
+
+        else:
+          posturl = post.url
+          if not post.url.startswith('https://'):
+            posturl = 'https://' + post.url
+          
+          params = {"title": edit_text(post.title, 'title'), "url": posturl}
 
         sub = post.subreddit
 
