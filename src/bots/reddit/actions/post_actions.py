@@ -98,6 +98,8 @@ class Posts():
       post = self.get_post(subreddit=subreddit)
       if not post: return
       posturl = post.url
+      if posturl is None:
+         log.info("post url is None. skipping")
       log.info(posturl)
       if not str(posturl).startswith('https://'):
         posturl = 'https://' + posturl
@@ -123,6 +125,8 @@ class Posts():
 
         else:
           posturl = post.url
+          if posturl is None:
+           log.info("post url is None. skipping")
           if not str(posturl).startswith('https://'):
             posturl = 'https://' + posturl
           
